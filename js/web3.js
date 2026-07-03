@@ -17,20 +17,28 @@ async function connectWallet() {
 
     // Switch to Hardhat if needed
     try {
+        console.log('Switching to chain:', CONFIG.NETWORK.chainId);
         await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: CONFIG.NETWORK.chainId }]
+            params: [{ chainId: String(CONFIG.NETWORK.chainId) }]
         });
     } catch (switchError) {
-        if (switchError.code === 4902) {
+        console.warn('Switch chain error:', switchError);
+        if (switchError.code === 4902 || switchError.code === -32603) {
+            console.log('Adding chain:', CONFIG.NETWORK.chainId);
+            const params = {
+                chainId: String(CONFIG.NETWORK.chainId),
+                chainName: CONFIG.NETWORK.chainName,
+                rpcUrls: [CONFIG.NETWORK.rpcUrl],
+                nativeCurrency: {
+                    name: CONFIG.NETWORK.nativeCurrency?.name || 'Ether',
+                    symbol: CONFIG.NETWORK.nativeCurrency?.symbol || 'ETH',
+                    decimals: Number(CONFIG.NETWORK.nativeCurrency?.decimals || 18)
+                }
+            };
             await window.ethereum.request({
                 method: 'wallet_addEthereumChain',
-                params: [{
-                    chainId: CONFIG.NETWORK.chainId,
-                    chainName: CONFIG.NETWORK.chainName,
-                    rpcUrls: [CONFIG.NETWORK.rpcUrl],
-                    nativeCurrency: CONFIG.NETWORK.currency
-                }]
+                params: [params]
             });
         }
     }

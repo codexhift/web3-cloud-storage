@@ -78,10 +78,11 @@ function initApp() {
 
     function filterByCategory(files) {
         if (currentCategory === 'all') return files;
-        return files.filter(f => getCategory(f.fileName) === currentCategory);
+        return files.filter(f => f.fileName && getCategory(f.fileName) === currentCategory);
     }
 
     function getCategory(fileName) {
+        if (!fileName) return 'other';
         const ext = fileName.split('.').pop().toLowerCase();
         const map = {
             images: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'],
@@ -290,15 +291,15 @@ function initApp() {
         files.forEach(file => {
             const el = document.createElement('div');
             el.className = 'file-item';
-            const safeName = escapeHtml(file.fileName);
-            const safeId = escapeAttr(file.fileId);
+            const safeName = escapeHtml(file.fileName || '');
+            const safeId = escapeAttr(file.fileId || '');
             const badges = [];
             if (file.isEncrypted) badges.push('<span class="badge badge-encrypted" title="Encrypted">🔒</span>');
             if (file.ipfsHash) badges.push('<span class="badge badge-ipfs" title="IPFS: ' + escapeAttr(file.ipfsHash) + '">📌</span>');
 
             el.innerHTML = `
                 <div class="file-name">
-                    <div class="file-icon">${getFileIcon(file.fileName)}</div>
+                    <div class="file-icon">${getFileIcon(file.fileName || '')}</div>
                     <div class="file-info">
                         <div class="file-title">${safeName} ${badges.join('')}</div>
                         <div class="file-hash" title="${safeId}">ID: ${safeId.substring(0, 16)}...</div>
@@ -345,7 +346,11 @@ function initApp() {
             const target = currentPage === 'files' ? filesFileList : homeFileList;
             const base = currentPage === 'files' ? filterByCategory(allFiles) : allFiles.slice(0, 5);
             if (!q) return renderFileList(base, target);
-            renderFileList(base.filter(f => f.fileName.toLowerCase().includes(q) || f.fileId.includes(q)), target);
+            renderFileList(base.filter(f => {
+                const nameMatch = f.fileName && f.fileName.toLowerCase().includes(q);
+                const idMatch = f.fileId && f.fileId.toLowerCase().includes(q);
+                return nameMatch || idMatch;
+            }), target);
         });
     }
 
@@ -428,8 +433,8 @@ async function viewFileAction(fileId, fileName, isEncrypted) {
     body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Loading preview...</div>';
     modal.classList.add('show');
 
-    const ext = fileName.split('.').pop().toLowerCase();
-    const fileUrl = CONFIG.SERVER.url + '/api/files/' + encodeURIComponent(fileId) + '?name=' + encodeURIComponent(fileName);
+    const ext = fileName ? fileName.split('.').pop().toLowerCase() : '';
+    const fileUrl = CONFIG.SERVER.url + '/api/files/' + encodeURIComponent(fileId) + '?name=' + encodeURIComponent(fileName || '');
 
     try {
         if (isEncrypted) {
@@ -582,6 +587,7 @@ function formatDate(ts) {
     return new Date(ts).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 function getFileIcon(fn) {
+    if (!fn) return HERO_ICONS.document;
     const ext = fn.split('.').pop().toLowerCase();
     const m = {
         pdf: HERO_ICONS.document, doc: HERO_ICONS.document, docx: HERO_ICONS.document, txt: HERO_ICONS.document,

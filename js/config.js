@@ -33,12 +33,6 @@ const CONFIG = {
                         },
                         {
                                 "indexed": false,
-                                "internalType": "uint256",
-                                "name": "index",
-                                "type": "uint256"
-                        },
-                        {
-                                "indexed": false,
                                 "internalType": "string",
                                 "name": "fileId",
                                 "type": "string"
@@ -58,9 +52,40 @@ const CONFIG = {
                         },
                         {
                                 "indexed": false,
-                                "internalType": "uint256",
-                                "name": "index",
-                                "type": "uint256"
+                                "internalType": "string",
+                                "name": "fileId",
+                                "type": "string"
+                        },
+                        {
+                                "indexed": false,
+                                "internalType": "string",
+                                "name": "oldFolder",
+                                "type": "string"
+                        },
+                        {
+                                "indexed": false,
+                                "internalType": "string",
+                                "name": "newFolder",
+                                "type": "string"
+                        }
+                ],
+                "name": "FileMoved",
+                "type": "event"
+        },
+        {
+                "anonymous": false,
+                "inputs": [
+                        {
+                                "indexed": true,
+                                "internalType": "address",
+                                "name": "owner",
+                                "type": "address"
+                        },
+                        {
+                                "indexed": false,
+                                "internalType": "string",
+                                "name": "fileId",
+                                "type": "string"
                         },
                         {
                                 "indexed": false,
@@ -76,6 +101,37 @@ const CONFIG = {
                         }
                 ],
                 "name": "FileRenamed",
+                "type": "event"
+        },
+        {
+                "anonymous": false,
+                "inputs": [
+                        {
+                                "indexed": true,
+                                "internalType": "address",
+                                "name": "owner",
+                                "type": "address"
+                        },
+                        {
+                                "indexed": true,
+                                "internalType": "address",
+                                "name": "recipient",
+                                "type": "address"
+                        },
+                        {
+                                "indexed": false,
+                                "internalType": "string",
+                                "name": "fileId",
+                                "type": "string"
+                        },
+                        {
+                                "indexed": false,
+                                "internalType": "string",
+                                "name": "fileName",
+                                "type": "string"
+                        }
+                ],
+                "name": "FileShared",
                 "type": "event"
         },
         {
@@ -122,17 +178,55 @@ const CONFIG = {
                                 "internalType": "bool",
                                 "name": "isEncrypted",
                                 "type": "bool"
+                        },
+                        {
+                                "indexed": false,
+                                "internalType": "string",
+                                "name": "folderName",
+                                "type": "string"
                         }
                 ],
                 "name": "FileUploaded",
                 "type": "event"
         },
         {
+                "anonymous": false,
                 "inputs": [
                         {
-                                "internalType": "uint256",
-                                "name": "_index",
-                                "type": "uint256"
+                                "indexed": true,
+                                "internalType": "address",
+                                "name": "owner",
+                                "type": "address"
+                        },
+                        {
+                                "indexed": false,
+                                "internalType": "string",
+                                "name": "folderName",
+                                "type": "string"
+                        }
+                ],
+                "name": "FolderCreated",
+                "type": "event"
+        },
+        {
+                "inputs": [
+                        {
+                                "internalType": "string",
+                                "name": "_folderName",
+                                "type": "string"
+                        }
+                ],
+                "name": "createFolder",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+        },
+        {
+                "inputs": [
+                        {
+                                "internalType": "string",
+                                "name": "_fileId",
+                                "type": "string"
                         }
                 ],
                 "name": "deleteFile",
@@ -186,6 +280,11 @@ const CONFIG = {
                                                 "internalType": "bool",
                                                 "name": "isEncrypted",
                                                 "type": "bool"
+                                        },
+                                        {
+                                                "internalType": "string",
+                                                "name": "folderName",
+                                                "type": "string"
                                         }
                                 ],
                                 "internalType": "struct CloudStorage.File",
@@ -204,6 +303,61 @@ const CONFIG = {
                                 "internalType": "uint256",
                                 "name": "",
                                 "type": "uint256"
+                        }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+        },
+        {
+                "inputs": [],
+                "name": "getFilesSharedWithMe",
+                "outputs": [
+                        {
+                                "components": [
+                                        {
+                                                "internalType": "string",
+                                                "name": "fileId",
+                                                "type": "string"
+                                        },
+                                        {
+                                                "internalType": "string",
+                                                "name": "ipfsHash",
+                                                "type": "string"
+                                        },
+                                        {
+                                                "internalType": "string",
+                                                "name": "fileName",
+                                                "type": "string"
+                                        },
+                                        {
+                                                "internalType": "uint256",
+                                                "name": "fileSize",
+                                                "type": "uint256"
+                                        },
+                                        {
+                                                "internalType": "uint256",
+                                                "name": "uploadTime",
+                                                "type": "uint256"
+                                        },
+                                        {
+                                                "internalType": "address",
+                                                "name": "owner",
+                                                "type": "address"
+                                        },
+                                        {
+                                                "internalType": "bool",
+                                                "name": "isEncrypted",
+                                                "type": "bool"
+                                        },
+                                        {
+                                                "internalType": "string",
+                                                "name": "folderName",
+                                                "type": "string"
+                                        }
+                                ],
+                                "internalType": "struct CloudStorage.File[]",
+                                "name": "",
+                                "type": "tuple[]"
                         }
                 ],
                 "stateMutability": "view",
@@ -249,6 +403,11 @@ const CONFIG = {
                                                 "internalType": "bool",
                                                 "name": "isEncrypted",
                                                 "type": "bool"
+                                        },
+                                        {
+                                                "internalType": "string",
+                                                "name": "folderName",
+                                                "type": "string"
                                         }
                                 ],
                                 "internalType": "struct CloudStorage.File[]",
@@ -260,11 +419,42 @@ const CONFIG = {
                 "type": "function"
         },
         {
+                "inputs": [],
+                "name": "getMyFolders",
+                "outputs": [
+                        {
+                                "internalType": "string[]",
+                                "name": "",
+                                "type": "string[]"
+                        }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+        },
+        {
                 "inputs": [
                         {
-                                "internalType": "uint256",
-                                "name": "_index",
-                                "type": "uint256"
+                                "internalType": "string",
+                                "name": "_fileId",
+                                "type": "string"
+                        },
+                        {
+                                "internalType": "string",
+                                "name": "_folderName",
+                                "type": "string"
+                        }
+                ],
+                "name": "moveFileToFolder",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+        },
+        {
+                "inputs": [
+                        {
+                                "internalType": "string",
+                                "name": "_fileId",
+                                "type": "string"
                         },
                         {
                                 "internalType": "string",
@@ -273,6 +463,24 @@ const CONFIG = {
                         }
                 ],
                 "name": "renameFile",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+        },
+        {
+                "inputs": [
+                        {
+                                "internalType": "string",
+                                "name": "_fileId",
+                                "type": "string"
+                        },
+                        {
+                                "internalType": "address",
+                                "name": "_recipient",
+                                "type": "address"
+                        }
+                ],
+                "name": "shareFile",
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
@@ -303,6 +511,11 @@ const CONFIG = {
                                 "internalType": "bool",
                                 "name": "_isEncrypted",
                                 "type": "bool"
+                        },
+                        {
+                                "internalType": "string",
+                                "name": "_folderName",
+                                "type": "string"
                         }
                 ],
                 "name": "uploadFile",

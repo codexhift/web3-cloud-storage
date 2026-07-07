@@ -6,44 +6,66 @@ let provider, signer, contract;
 let userAddress = '';
 let authToken = '';
 
+function getNativeCurrency() {
+    return CONFIG.NETWORK.nativeCurrency || CONFIG.NETWORK.currency || {
+        name: 'Ether',
+        symbol: 'ETH',
+        decimals: 18
+    };
+}
+
+async function ensureConfiguredNetwork() {
+    const chainId = String(CONFIG.NETWORK.chainId);
+
+    try {
+        console.log('Switching to chain:', chainId);
+        await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId }]
+        });
+    } catch (switchError) {
+        console.warn('Switch chain error:', switchError);
+        if (switchError.code !== 4902 && switchError.code !== -32603) throw switchError;
+
+        console.log('Adding chain:', chainId);
+        const nativeCurrency = getNativeCurrency();
+        await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+                chainId,
+                chainName: CONFIG.NETWORK.chainName,
+                rpcUrls: [CONFIG.NETWORK.rpcUrl],
+                nativeCurrency: {
+                    name: nativeCurrency.name || 'Ether',
+                    symbol: nativeCurrency.symbol || 'ETH',
+                    decimals: Number(nativeCurrency.decimals || 18)
+                }
+            }]
+        });
+    }
+}
+
 // ─── Connect Wallet ─────────────────────────────
 async function connectWallet() {
     if (!window.ethereum) throw new Error('MetaMask not found');
 
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    await ensureConfiguredNetwork();
+
     provider = new ethers.BrowserProvider(window.ethereum);
     signer = await provider.getSigner();
-    userAddress = accounts[0];
+    userAddress = await signer.getAddress();
+    contract = new ethers.Contract(CONFIG.CONTRACT.address, CONFIG.CONTRACT.abi, signer);
 
-    // Switch to Hardhat if needed
-    try {
-        console.log('Switching to chain:', CONFIG.NETWORK.chainId);
-        await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: String(CONFIG.NETWORK.chainId) }]
-        });
-    } catch (switchError) {
-        console.warn('Switch chain error:', switchError);
-        if (switchError.code === 4902 || switchError.code === -32603) {
-            console.log('Adding chain:', CONFIG.NETWORK.chainId);
-            const params = {
-                chainId: String(CONFIG.NETWORK.chainId),
-                chainName: CONFIG.NETWORK.chainName,
-                rpcUrls: [CONFIG.NETWORK.rpcUrl],
-                nativeCurrency: {
-                    name: CONFIG.NETWORK.nativeCurrency?.name || 'Ether',
-                    symbol: CONFIG.NETWORK.nativeCurrency?.symbol || 'ETH',
-                    decimals: Number(CONFIG.NETWORK.nativeCurrency?.decimals || 18)
-                }
-            };
-            await window.ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [params]
-            });
-        }
+    const network = await provider.getNetwork();
+    if (network.chainId !== BigInt(CONFIG.NETWORK.chainId)) {
+        throw new Error(`Wrong network. Expected ${CONFIG.NETWORK.chainName}, got chain ${network.chainId}.`);
     }
 
-    contract = new ethers.Contract(CONFIG.CONTRACT.address, CONFIG.CONTRACT.abi, signer);
+    const code = await provider.getCode(CONFIG.CONTRACT.address);
+    if (code === '0x') {
+        throw new Error(`Contract not found on ${CONFIG.NETWORK.chainName}. Restart Hardhat and run npm run deploy.`);
+    }
 
     // Auto SIWE after connect
     try {
@@ -104,10 +126,31 @@ async function getBalance() {
     return ethers.formatEther(balance);
 }
 
+async function getWalletSummary() {
+    if (!provider || !userAddress) throw new Error('Wallet not connected');
+    const [network, balance, code] = await Promise.all([
+        provider.getNetwork(),
+        provider.getBalance(userAddress),
+        provider.getCode(CONFIG.CONTRACT.address)
+    ]);
+
+    return {
+        address: userAddress,
+        shortAddress: userAddress.substring(0, 6) + '...' + userAddress.substring(38),
+        balance: ethers.formatEther(balance),
+        networkName: CONFIG.NETWORK.chainName || 'Chain ' + network.chainId,
+        chainId: network.chainId.toString(),
+        rpcUrl: CONFIG.NETWORK.rpcUrl,
+        contractAddress: CONFIG.CONTRACT.address,
+        contractReady: code !== '0x'
+    };
+}
+
 // ─── Contract: Upload ───────────────────────────
-async function uploadFileOnChain(fileId, ipfsHash, fileName, fileSize, isEncrypted) {
+async function uploadFileOnChain(fileId, ipfsHash, fileName, fileSize, isEncrypted, folderName) {
     if (!contract) throw new Error('Wallet not connected');
-    const tx = await contract.uploadFile(fileId, ipfsHash || '', fileName, fileSize, isEncrypted || false);
+    await ensureConfiguredNetwork();
+    const tx = await contract.uploadFile(fileId, ipfsHash || '', fileName, fileSize, isEncrypted || false, folderName || '');
     await tx.wait();
     return tx.hash;
 }
@@ -124,22 +167,67 @@ async function getFilesFromChain() {
         fileSize: Number(file.fileSize),
         uploadTime: Number(file.uploadTime) * 1000,
         owner: file.owner,
-        isEncrypted: file.isEncrypted || false
+        isEncrypted: file.isEncrypted || false,
+        folderName: file.folderName || ''
     }));
 }
 
-// ─── Contract: Delete ───────────────────────────
-async function deleteFileOnChain(index) {
+async function getSharedFilesFromChain() {
     if (!contract) throw new Error('Wallet not connected');
-    const tx = await contract.deleteFile(index);
+    const files = await contract.getFilesSharedWithMe();
+    return files.map(file => ({
+        index: null,
+        fileId: file.fileId,
+        ipfsHash: file.ipfsHash || '',
+        fileName: file.fileName,
+        fileSize: Number(file.fileSize),
+        uploadTime: Number(file.uploadTime) * 1000,
+        owner: file.owner,
+        isEncrypted: file.isEncrypted || false,
+        folderName: file.folderName || '',
+        isShared: true
+    }));
+}
+
+async function getFoldersFromChain() {
+    if (!contract) throw new Error('Wallet not connected');
+    return await contract.getMyFolders();
+}
+
+async function createFolderOnChain(folderName) {
+    if (!contract) throw new Error('Wallet not connected');
+    const tx = await contract.createFolder(folderName);
+    await tx.wait();
+    return tx.hash;
+}
+
+async function shareFileOnChain(fileId, recipient) {
+    if (!contract) throw new Error('Wallet not connected');
+    if (!ethers.isAddress(recipient)) throw new Error('Invalid wallet address');
+    const tx = await contract.shareFile(fileId, recipient);
+    await tx.wait();
+    return tx.hash;
+}
+
+// ─── Contract: Delete ───────────────────────────
+async function deleteFileOnChain(fileId) {
+    if (!contract) throw new Error('Wallet not connected');
+    const tx = await contract.deleteFile(fileId);
     await tx.wait();
     return tx.hash;
 }
 
 // ─── Contract: Rename ───────────────────────────
-async function renameFileOnChain(index, newName) {
+async function renameFileOnChain(fileId, newName) {
     if (!contract) throw new Error('Wallet not connected');
-    const tx = await contract.renameFile(index, newName);
+    const tx = await contract.renameFile(fileId, newName);
+    await tx.wait();
+    return tx.hash;
+}
+
+async function moveFileToFolderOnChain(fileId, folderName) {
+    if (!contract) throw new Error('Wallet not connected');
+    const tx = await contract.moveFileToFolder(fileId, folderName || '');
     await tx.wait();
     return tx.hash;
 }
@@ -170,6 +258,7 @@ async function getActivityLog() {
                 ipfsHash: e.args[2] || '',
                 fileSize: Number(e.args[4]),
                 isEncrypted: e.args[6] || false,
+                folderName: e.args[7] || '',
                 blockNumber: e.blockNumber,
                 txHash: e.transactionHash,
                 timestamp: Number(e.args[5]) * 1000
@@ -185,7 +274,7 @@ async function getActivityLog() {
                 type: 'delete',
                 label: 'File Deleted',
                 fileName: '',
-                fileId: e.args[2],
+                fileId: e.args[1],
                 blockNumber: e.blockNumber,
                 txHash: e.transactionHash,
                 timestamp: block ? block.timestamp * 1000 : Date.now()
@@ -200,7 +289,53 @@ async function getActivityLog() {
             events.push({
                 type: 'rename',
                 label: 'File Renamed',
+                fileId: e.args[1],
                 fileName: e.args[2] + ' → ' + e.args[3],
+                blockNumber: e.blockNumber,
+                txHash: e.transactionHash,
+                timestamp: block ? block.timestamp * 1000 : Date.now()
+            });
+        }
+
+        const shareFilter = contract.filters.FileShared(userAddress);
+        const shareEvents = await contract.queryFilter(shareFilter);
+        for (const e of shareEvents) {
+            const block = await provider.getBlock(e.blockNumber);
+            events.push({
+                type: 'share',
+                label: 'File Shared',
+                fileName: e.args[3],
+                fileId: e.args[2],
+                recipient: e.args[1],
+                blockNumber: e.blockNumber,
+                txHash: e.transactionHash,
+                timestamp: block ? block.timestamp * 1000 : Date.now()
+            });
+        }
+
+        const moveFilter = contract.filters.FileMoved(userAddress);
+        const moveEvents = await contract.queryFilter(moveFilter);
+        for (const e of moveEvents) {
+            const block = await provider.getBlock(e.blockNumber);
+            events.push({
+                type: 'folder',
+                label: 'File Moved',
+                fileName: (e.args[2] || 'Home') + ' → ' + (e.args[3] || 'Home'),
+                fileId: e.args[1],
+                blockNumber: e.blockNumber,
+                txHash: e.transactionHash,
+                timestamp: block ? block.timestamp * 1000 : Date.now()
+            });
+        }
+
+        const folderFilter = contract.filters.FolderCreated(userAddress);
+        const folderEvents = await contract.queryFilter(folderFilter);
+        for (const e of folderEvents) {
+            const block = await provider.getBlock(e.blockNumber);
+            events.push({
+                type: 'folder',
+                label: 'Folder Created',
+                fileName: e.args[1],
                 blockNumber: e.blockNumber,
                 txHash: e.transactionHash,
                 timestamp: block ? block.timestamp * 1000 : Date.now()

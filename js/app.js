@@ -26,10 +26,17 @@ function initApp() {
     const walletAddr = document.getElementById('walletAddress');
     const networkInfo = document.getElementById('networkInfo');
     const balanceInfo = document.getElementById('balanceInfo');
-    const uploadZone = document.getElementById('uploadZone');
+    const uploadZone = null;
     const fileInput = document.getElementById('fileInput');
+    const folderInput = document.getElementById('folderInput');
+    const sidebarAddBtn = document.getElementById('sidebarAddBtn');
+    const uploadMenu = document.getElementById('uploadMenu');
+    const uploadFileBtn = document.getElementById('uploadFileBtn');
+    const uploadFolderBtn = document.getElementById('uploadFolderBtn');
+    const createFolderBtn = document.getElementById('createFolderBtn');
     const homeFileList = document.getElementById('homeFileList');
     const filesFileList = document.getElementById('filesFileList');
+    const sharedFileList = document.getElementById('sharedFileList');
     const searchBar = document.getElementById('searchBar');
     const statusMessage = document.getElementById('statusMessage');
     const totalFilesEl = document.getElementById('totalFiles');
@@ -39,12 +46,30 @@ function initApp() {
     const progressBar = document.getElementById('progressBar');
     const progressText = document.getElementById('progressText');
     const encryptToggle = document.getElementById('encryptToggle');
+    const folderTabs = document.getElementById('folderTabs');
+    const folderCards = document.getElementById('folderCards');
     const dragOverlay = document.getElementById('dragOverlay');
     const activityList = document.getElementById('activityList');
+    const walletPageAddress = document.getElementById('walletPageAddress');
+    const walletPageFullAddress = document.getElementById('walletPageFullAddress');
+    const walletPageStatus = document.getElementById('walletPageStatus');
+    const walletPageBalance = document.getElementById('walletPageBalance');
+    const walletPageNetwork = document.getElementById('walletPageNetwork');
+    const walletPageChainId = document.getElementById('walletPageChainId');
+    const walletPageContract = document.getElementById('walletPageContract');
+    const walletPageRpc = document.getElementById('walletPageRpc');
+    const walletAvatar = document.getElementById('walletAvatar');
 
     let allFiles = [];
+    let sharedFiles = [];
+    let folderNames = [];
     let currentPage = 'home';
     let currentCategory = 'all';
+    let currentFolder = '';
+    let activeMenuFile = null;
+    const fileActionMenu = document.createElement('div');
+    fileActionMenu.className = 'file-action-menu';
+    document.body.appendChild(fileActionMenu);
 
     // ─── Page Routing ───────────────────────────
     document.querySelectorAll('.nav-item[data-page]').forEach(item => {
@@ -63,7 +88,9 @@ function initApp() {
         if (pageEl) pageEl.style.display = 'block';
 
         if (page === 'activity') loadActivity();
-        if (page === 'files') renderFileList(filterByCategory(allFiles), filesFileList);
+        if (page === 'files') renderFileList(filterFiles(allFiles), filesFileList);
+        if (page === 'shared') loadSharedFiles();
+        if (page === 'wallet') loadWalletPage();
     }
 
     // ─── Category Filter ────────────────────────
@@ -72,13 +99,16 @@ function initApp() {
             document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
             this.classList.add('active');
             currentCategory = this.dataset.cat;
-            renderFileList(filterByCategory(allFiles), filesFileList);
+            renderFileList(filterFiles(allFiles), filesFileList);
         });
     });
 
-    function filterByCategory(files) {
-        if (currentCategory === 'all') return files;
-        return files.filter(f => f.fileName && getCategory(f.fileName) === currentCategory);
+    function filterFiles(files) {
+        return files.filter(f => {
+            const folderMatch = currentFolder === '' || (f.folderName || '') === currentFolder;
+            const categoryMatch = currentCategory === 'all' || (f.fileName && getCategory(f.fileName) === currentCategory);
+            return folderMatch && categoryMatch;
+        });
     }
 
     function getCategory(fileName) {
@@ -118,6 +148,8 @@ function initApp() {
 
             showStatus('Wallet connected & authenticated!', 'success');
             await loadFiles();
+            await loadSharedFiles();
+            await loadWalletPage();
 
         } catch (error) {
             console.error('Connection error:', error);
@@ -166,37 +198,82 @@ function initApp() {
         });
     });
 
-    // ─── Mobile Upload FAB ──────────────────────
-    const mobileUploadFab = document.getElementById('mobileUploadFab');
-    if (mobileUploadFab) {
-        mobileUploadFab.addEventListener('click', () => {
-            if (!userAddress) return showStatus('⚠️ Connect wallet first', 'error');
+    // ─── Sidebar Upload Menu ────────────────────
+    function closeUploadMenu() {
+        if (uploadMenu) uploadMenu.classList.remove('show');
+        if (sidebarAddBtn) sidebarAddBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    function openUploadMenu() {
+        if (!uploadMenu || !sidebarAddBtn) return;
+        uploadMenu.classList.toggle('show');
+        sidebarAddBtn.setAttribute('aria-expanded', uploadMenu.classList.contains('show') ? 'true' : 'false');
+    }
+
+    function requireWallet() {
+        if (!userAddress) {
+            showStatus('⚠️ Connect wallet first', 'error');
+            return false;
+        }
+        return true;
+    }
+
+    if (sidebarAddBtn) {
+        sidebarAddBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            if (!requireWallet()) return;
+            openUploadMenu();
+        });
+    }
+
+    if (uploadFileBtn) {
+        uploadFileBtn.addEventListener('click', () => {
+            closeUploadMenu();
+            if (isMobile()) closeSidebar();
+            if (!requireWallet()) return;
             fileInput.click();
         });
     }
 
-    // ─── Upload Zone ────────────────────────────
-    uploadZone.addEventListener('click', () => {
-        if (!userAddress) return showStatus('⚠️ Connect wallet first', 'error');
-        fileInput.click();
-    });
-
-    // Only register drag events on non-mobile devices
-    if (!isMobile()) {
-        uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
-        uploadZone.addEventListener('dragleave', e => { e.preventDefault(); uploadZone.classList.remove('dragover'); });
-        uploadZone.addEventListener('drop', e => {
-            e.preventDefault(); uploadZone.classList.remove('dragover');
-            if (!userAddress) return showStatus('⚠️ Connect wallet first', 'error');
-            handleFileUpload(e.dataTransfer.files);
+    if (uploadFolderBtn) {
+        uploadFolderBtn.addEventListener('click', () => {
+            closeUploadMenu();
+            if (isMobile()) closeSidebar();
+            if (!requireWallet()) return;
+            folderInput.click();
         });
     }
 
-    fileInput.addEventListener('change', e => {
-        if (e.target.files.length > 0) { handleFileUpload(e.target.files); e.target.value = ''; }
+    if (createFolderBtn) {
+        createFolderBtn.addEventListener('click', () => {
+            closeUploadMenu();
+            if (isMobile()) closeSidebar();
+            if (!requireWallet()) return;
+            createFolderAction();
+        });
+    }
+
+    document.addEventListener('click', e => {
+        if (uploadMenu && !e.target.closest('.sidebar-upload-section')) closeUploadMenu();
     });
 
-    // ─── Full-Screen Drag Overlay ───────────────
+    fileInput.addEventListener('change', e => {
+        if (e.target.files.length > 0) {
+            const items = filesToUploadItems(e.target.files, '');
+            handleFileUpload(items);
+            e.target.value = '';
+        }
+    });
+
+    folderInput.addEventListener('change', e => {
+        if (e.target.files.length > 0) {
+            const items = filesToUploadItems(e.target.files, null);
+            handleFileUpload(items);
+            e.target.value = '';
+        }
+    });
+
+    // ─── Implicit Full-Page Drag & Drop ─────────
     if (!isMobile()) {
         let dragCounter = 0;
         document.addEventListener('dragenter', e => {
@@ -211,24 +288,37 @@ function initApp() {
         });
         document.addEventListener('dragover', e => e.preventDefault());
         document.addEventListener('drop', e => {
-            e.preventDefault(); dragCounter = 0; dragOverlay.classList.remove('show');
+            e.preventDefault();
+            dragCounter = 0;
+            dragOverlay.classList.remove('show');
         });
-        dragOverlay.addEventListener('drop', e => {
-            e.preventDefault(); dragCounter = 0; dragOverlay.classList.remove('show');
-            if (!userAddress) return;
-            handleFileUpload(e.dataTransfer.files);
+        dragOverlay.addEventListener('drop', async e => {
+            e.preventDefault();
+            dragCounter = 0;
+            dragOverlay.classList.remove('show');
+            if (!requireWallet()) return;
+            try {
+                const items = await collectItemsFromDataTransfer(e.dataTransfer);
+                if (items.length > 0) handleFileUpload(items);
+            } catch (err) {
+                showStatus('Drop failed: ' + err.message, 'error');
+            }
         });
     }
 
     // ─── File Upload Handler ────────────────────
-    async function handleFileUpload(fileList) {
-        const total = fileList.length;
+    async function handleFileUpload(items) {
+        const total = items.length;
         let completed = 0;
         const encrypt = encryptToggle && encryptToggle.checked;
 
+        if (total === 0) return;
         showProgress(true);
 
-        for (const file of fileList) {
+        for (const item of items) {
+            const file = item.file;
+            const folderName = item.folderName || '';
+            let uploadedFileId = '';
             try {
                 updateProgress(completed, total, `Uploading ${file.name}...`);
 
@@ -252,14 +342,20 @@ function initApp() {
                 const response = await fetch(CONFIG.SERVER.url + '/api/upload', { method: 'POST', body: uploadBody });
                 if (!response.ok) { const e = await response.json().catch(() => ({})); throw new Error(e.error || 'Upload failed'); }
                 const result = await response.json();
+                uploadedFileId = result.fileId;
 
                 updateProgress(completed, total, `Storing ${file.name} on blockchain...`);
-                await uploadFileOnChain(result.fileId, result.ipfsHash || '', uploadFileName, result.fileSize, encrypt);
+                const txHash = await uploadFileOnChain(result.fileId, result.ipfsHash || '', uploadFileName, result.fileSize, encrypt, folderName);
 
                 completed++;
-                showStatus(`${file.name} uploaded${encrypt ? ' (encrypted)' : ''}${result.ipfsHash ? ' + IPFS' : ''}!`, 'success');
+                const folderLabel = folderName ? ` → ${folderName}` : '';
+                showStatus(`${file.name}${folderLabel} uploaded${encrypt ? ' (encrypted)' : ''}${result.ipfsHash ? ' + IPFS' : ''}! Tx: ${txHash.substring(0, 10)}...`, 'success');
             } catch (error) {
                 console.error('Upload error:', error);
+                if (uploadedFileId) {
+                    const headers = typeof getAuthHeaders === 'function' ? getAuthHeaders() : {};
+                    fetch(CONFIG.SERVER.url + '/api/files/' + encodeURIComponent(uploadedFileId), { method: 'DELETE', headers }).catch(() => {});
+                }
                 showStatus(`Failed: ${file.name}: ${error.message}`, 'error');
             }
         }
@@ -271,15 +367,121 @@ function initApp() {
     // ─── Load Files ─────────────────────────────
     async function loadFiles() {
         try {
-            allFiles = await getFilesFromChain();
+            [allFiles, folderNames] = await Promise.all([
+                getFilesFromChain(),
+                getFoldersFromChain().catch(() => [])
+            ]);
             renderFileList(allFiles.slice(0, 5), homeFileList);
-            if (currentPage === 'files') renderFileList(filterByCategory(allFiles), filesFileList);
+            renderFolderTabs();
+            if (currentPage === 'files') renderFileList(filterFiles(allFiles), filesFileList);
             updateStats(allFiles);
         } catch (error) { console.error('Load error:', error); }
     }
 
+    function renderFolderTabs() {
+        if (!folderTabs) return;
+        const folders = getFolderSummaries();
+        if (currentFolder && !folders.some(folder => folder.name === currentFolder)) currentFolder = '';
+        const buttons = [`<button class="folder-tab ${currentFolder === '' ? 'active' : ''}" data-folder="">All Files</button>`]
+            .concat(folders.map(folder => {
+                const depth = folder.name.split('/').length - 1;
+                const label = depth > 0 ? '└ ' + folder.name.split('/').pop() : folder.name;
+                return `<button class="folder-tab ${currentFolder === folder.name ? 'active' : ''}" data-folder="${escapeAttr(folder.name)}" title="${escapeAttr(folder.name)}">${escapeHtml(label)}</button>`;
+            }));
+        folderTabs.innerHTML = buttons.join('');
+        folderTabs.querySelectorAll('.folder-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentFolder = btn.dataset.folder || '';
+                renderFolderTabs();
+                renderFileList(filterFiles(allFiles), filesFileList);
+            });
+        });
+        renderFolderCards(folders);
+    }
+
+    function getFolderSummaries() {
+        const map = new Map();
+        for (const folderName of folderNames) {
+            if (!folderName) continue;
+            map.set(folderName, { name: folderName, count: 0, size: 0 });
+        }
+        for (const file of allFiles) {
+            const folderName = file.folderName || '';
+            if (!folderName) continue;
+            const summary = map.get(folderName) || { name: folderName, count: 0, size: 0 };
+            summary.count++;
+            summary.size += Number(file.fileSize || 0);
+            map.set(folderName, summary);
+        }
+        return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    function renderFolderCards(folders) {
+        if (!folderCards) return;
+        if (folders.length === 0) {
+            folderCards.innerHTML = '';
+            return;
+        }
+        folderCards.innerHTML = folders.map(folder => `
+            <button class="folder-card ${currentFolder === folder.name ? 'active' : ''}" data-folder="${escapeAttr(folder.name)}" title="${escapeAttr(folder.name)}">
+                <span class="folder-card-icon">${HERO_ICONS.folder}</span>
+                <span class="folder-card-main">
+                    <span class="folder-card-name">${escapeHtml(folder.name)}</span>
+                    <span class="folder-card-meta">${folder.count} file${folder.count === 1 ? '' : 's'} · ${formatFileSize(folder.size)}</span>
+                </span>
+            </button>
+        `).join('');
+        folderCards.querySelectorAll('.folder-card').forEach(card => {
+            card.addEventListener('click', () => {
+                currentFolder = card.dataset.folder || '';
+                renderFolderTabs();
+                renderFileList(filterFiles(allFiles), filesFileList);
+            });
+        });
+    }
+
+    async function loadSharedFiles() {
+        if (!sharedFileList) return;
+        try {
+            sharedFiles = await getSharedFilesFromChain();
+            renderFileList(sharedFiles, sharedFileList, { shared: true });
+        } catch (error) { console.error('Shared load error:', error); }
+    }
+
+    async function loadWalletPage() {
+        if (!walletPageAddress) return;
+
+        if (!userAddress) {
+            walletPageAddress.textContent = 'Not connected';
+            walletPageFullAddress.textContent = '--';
+            walletPageStatus.textContent = 'Connect wallet to view account details';
+            walletPageBalance.textContent = '0 CLD';
+            walletPageNetwork.textContent = '--';
+            walletPageChainId.textContent = '--';
+            walletPageContract.textContent = CONFIG.CONTRACT.address || '--';
+            walletPageRpc.textContent = CONFIG.NETWORK.rpcUrl || '--';
+            walletAvatar.textContent = '--';
+            return;
+        }
+
+        try {
+            const summary = await getWalletSummary();
+            walletPageAddress.textContent = summary.shortAddress;
+            walletPageFullAddress.textContent = summary.address;
+            walletPageStatus.textContent = summary.contractReady ? 'Connected and contract detected' : 'Connected, contract not found on this RPC';
+            walletPageBalance.textContent = parseFloat(summary.balance).toFixed(4) + ' CLD';
+            walletPageNetwork.textContent = summary.networkName;
+            walletPageChainId.textContent = summary.chainId;
+            walletPageContract.textContent = summary.contractAddress;
+            walletPageRpc.textContent = summary.rpcUrl;
+            walletAvatar.textContent = summary.address.substring(2, 4).toUpperCase();
+        } catch (error) {
+            walletPageStatus.textContent = 'Wallet details unavailable: ' + error.message;
+        }
+    }
+
     // ─── Render File List ───────────────────────
-    function renderFileList(files, container) {
+    function renderFileList(files, container, options = {}) {
         if (!container) return;
         container.innerHTML = '';
 
@@ -295,32 +497,35 @@ function initApp() {
             const safeId = escapeAttr(file.fileId || '');
             const badges = [];
             if (file.isEncrypted) badges.push('<span class="badge badge-encrypted" title="Encrypted">🔒</span>');
+            if (file.isShared) badges.push('<span class="badge badge-ipfs" title="Shared with you">Shared</span>');
+            if (file.folderName) badges.push('<span class="badge badge-folder" title="Folder: ' + escapeAttr(file.folderName) + '">' + escapeHtml(file.folderName) + '</span>');
             if (file.ipfsHash) badges.push('<span class="badge badge-ipfs" title="IPFS: ' + escapeAttr(file.ipfsHash) + '">📌</span>');
+            const ownerLabel = file.isShared && file.owner
+                ? `<div class="file-hash" title="${escapeAttr(file.owner)}">From: ${escapeAttr(file.owner.substring(0, 6) + '...' + file.owner.substring(38))}</div>`
+                : '';
+            el.dataset.fileId = file.fileId || '';
+            el.dataset.fileName = file.fileName || '';
+            el.dataset.isEncrypted = file.isEncrypted ? 'true' : 'false';
+            el.dataset.folderName = file.folderName || '';
+            el.dataset.isShared = options.shared ? 'true' : 'false';
 
             el.innerHTML = `
                 <div class="file-name">
                     <div class="file-icon">${getFileIcon(file.fileName || '')}</div>
                     <div class="file-info">
                         <div class="file-title">${safeName} ${badges.join('')}</div>
-                        <div class="file-hash" title="${safeId}">ID: ${safeId.substring(0, 16)}...</div>
+                        <div class="file-hash" title="${safeId}">FileID: ${safeId.substring(0, 16)}...</div>
+                        ${ownerLabel}
                     </div>
                 </div>
                 <div class="file-size">${formatFileSize(file.fileSize)}</div>
                 <div class="file-date">${formatDate(file.uploadTime)}</div>
                 <div class="file-actions">
-                    <button class="kebab-btn" data-index="${file.index}" aria-label="Actions" title="Actions">
+                    <button class="kebab-btn" data-file-id="${safeId}" aria-label="Actions" title="Actions">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
                         </svg>
                     </button>
-                    <div class="file-dropdown" id="dropdown-${file.index}">
-                        <button class="dropdown-item" onclick="viewFileAction('${safeId}','${safeName}',${file.isEncrypted})"><span>${HERO_ICONS.view}</span> View</button>
-                        <button class="dropdown-item" onclick="renameFileAction(${file.index},'${safeName}')"><span>${HERO_ICONS.rename}</span> Rename</button>
-                        <button class="dropdown-item" onclick="downloadFileAction('${safeId}','${safeName}',${file.isEncrypted})"><span>${HERO_ICONS.download}</span> Download</button>
-                        <button class="dropdown-item" onclick="shareFileAction('${safeId}','${escapeAttr(file.ipfsHash || '')}')"><span>${HERO_ICONS.share}</span> Share Link</button>
-                        <div class="dropdown-divider"></div>
-                        <button class="dropdown-item dropdown-delete" onclick="deleteFileAction(${file.index},'${safeId}')"><span>${HERO_ICONS.delete}</span> Delete</button>
-                    </div>
                 </div>`;
             container.appendChild(el);
         });
@@ -328,23 +533,76 @@ function initApp() {
         container.querySelectorAll('.kebab-btn').forEach(btn => {
             btn.addEventListener('click', e => {
                 e.stopPropagation();
-                const dd = document.getElementById('dropdown-' + btn.dataset.index);
-                document.querySelectorAll('.file-dropdown.show').forEach(d => { if (d !== dd) d.classList.remove('show'); });
-                dd.classList.toggle('show');
+                openFileActionMenu(btn.closest('.file-item'), btn.getBoundingClientRect());
+            });
+        });
+        container.querySelectorAll('.file-item').forEach(item => {
+            item.addEventListener('contextmenu', e => {
+                e.preventDefault();
+                openFileActionMenu(item, { left: e.clientX, right: e.clientX, bottom: e.clientY, top: e.clientY });
             });
         });
     }
 
     document.addEventListener('click', () => {
-        document.querySelectorAll('.file-dropdown.show').forEach(d => d.classList.remove('show'));
+        closeAllDropdowns();
     });
+
+    fileActionMenu.addEventListener('click', async e => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn || !activeMenuFile) return;
+        const file = { ...activeMenuFile };
+        closeAllDropdowns();
+        if (btn.dataset.action === 'view') return viewFileAction(file.fileId, file.fileName, file.isEncrypted);
+        if (btn.dataset.action === 'rename') return renameFileAction(file.fileId, file.fileName);
+        if (btn.dataset.action === 'move') return moveFileAction(file.fileId, file.folderName);
+        if (btn.dataset.action === 'download') return downloadFileAction(file.fileId, file.fileName, file.isEncrypted);
+        if (btn.dataset.action === 'share') return shareFileAction(file.fileId, file.fileName);
+        if (btn.dataset.action === 'delete') return deleteFileAction(file.fileId);
+    });
+
+    window.addEventListener('resize', closeAllDropdowns);
+    document.addEventListener('scroll', closeAllDropdowns, true);
+
+    function openFileActionMenu(row, rect) {
+        if (!row) return;
+        activeMenuFile = {
+            fileId: row.dataset.fileId || '',
+            fileName: row.dataset.fileName || '',
+            folderName: row.dataset.folderName || '',
+            isEncrypted: row.dataset.isEncrypted === 'true',
+            isShared: row.dataset.isShared === 'true'
+        };
+
+        const ownerActions = activeMenuFile.isShared ? `
+            <button class="dropdown-item" data-action="view"><span>${HERO_ICONS.view}</span> View</button>
+            <button class="dropdown-item" data-action="download"><span>${HERO_ICONS.download}</span> Download</button>` : `
+            <button class="dropdown-item" data-action="view"><span>${HERO_ICONS.view}</span> View</button>
+            <button class="dropdown-item" data-action="rename"><span>${HERO_ICONS.rename}</span> Rename</button>
+            <button class="dropdown-item" data-action="move"><span>${HERO_ICONS.folder}</span> Move Folder</button>
+            <button class="dropdown-item" data-action="download"><span>${HERO_ICONS.download}</span> Download</button>
+            ${activeMenuFile.isEncrypted ? '' : `<button class="dropdown-item" data-action="share"><span>${HERO_ICONS.share}</span> Share to Wallet</button>`}
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item dropdown-delete" data-action="delete"><span>${HERO_ICONS.delete}</span> Delete</button>`;
+
+        fileActionMenu.innerHTML = ownerActions;
+        fileActionMenu.classList.add('show');
+
+        const menuRect = fileActionMenu.getBoundingClientRect();
+        const isPointAnchor = rect.left === rect.right && rect.top === rect.bottom;
+        const desiredX = isPointAnchor ? rect.left : rect.right - menuRect.width;
+        const x = Math.min(desiredX, window.innerWidth - menuRect.width - 12);
+        const y = Math.min(rect.bottom + 6, window.innerHeight - menuRect.height - 12);
+        fileActionMenu.style.left = Math.max(12, x) + 'px';
+        fileActionMenu.style.top = Math.max(12, y) + 'px';
+    }
 
     // ─── Search ─────────────────────────────────
     if (searchBar) {
         searchBar.addEventListener('input', e => {
             const q = e.target.value.toLowerCase();
-            const target = currentPage === 'files' ? filesFileList : homeFileList;
-            const base = currentPage === 'files' ? filterByCategory(allFiles) : allFiles.slice(0, 5);
+            const target = currentPage === 'files' ? filesFileList : currentPage === 'shared' ? sharedFileList : homeFileList;
+            const base = currentPage === 'files' ? filterFiles(allFiles) : currentPage === 'shared' ? sharedFiles : allFiles.slice(0, 5);
             if (!q) return renderFileList(base, target);
             renderFileList(base.filter(f => {
                 const nameMatch = f.fileName && f.fileName.toLowerCase().includes(q);
@@ -353,6 +611,21 @@ function initApp() {
             }), target);
         });
     }
+
+    document.querySelectorAll('.wallet-copy-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const target = document.getElementById(btn.dataset.copyTarget);
+            if (!target || !target.textContent || target.textContent === '--' || target.textContent === 'Not connected') {
+                return showStatus('Nothing to copy', 'error');
+            }
+            try {
+                await navigator.clipboard.writeText(target.textContent);
+                showStatus('Copied to clipboard', 'success');
+            } catch {
+                showStatus('Copy failed', 'error');
+            }
+        });
+    });
 
     // ─── Activity Log ───────────────────────────
     async function loadActivity() {
@@ -417,6 +690,8 @@ function initApp() {
 
     window.showStatus = showStatus;
     window.loadFiles = loadFiles;
+    window.loadSharedFiles = loadSharedFiles;
+    window.loadWalletPage = loadWalletPage;
 }
 
 // ═══════════════════════════════════════════════
@@ -484,7 +759,7 @@ function closePreviewModal() {
     const a = modal.querySelector('audio'); if (a) a.pause();
 }
 
-async function renameFileAction(index, currentName) {
+async function renameFileAction(fileId, currentName) {
     closeAllDropdowns();
     const modal = document.getElementById('renameModal');
     const input = document.getElementById('renameInput');
@@ -494,19 +769,20 @@ async function renameFileAction(index, currentName) {
     const ext = parts.length > 1 ? '.' + parts.pop() : '';
     input.value = parts.join('.');
     input.dataset.ext = ext;
-    input.dataset.index = index;
+    input.dataset.fileId = fileId;
     modal.classList.add('show');
     setTimeout(() => { input.focus(); input.setSelectionRange(0, input.value.length); }, 100);
 
     const newBtn = confirmBtn.cloneNode(true);
     confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+    newBtn.textContent = 'Move';
 
     newBtn.addEventListener('click', async () => {
         const newName = input.value.trim() + input.dataset.ext;
         if (!input.value.trim()) return window.showStatus('Name cannot be empty', 'error');
         newBtn.disabled = true; newBtn.textContent = 'Renaming...';
         try {
-            await renameFileOnChain(parseInt(input.dataset.index), newName);
+            await renameFileOnChain(input.dataset.fileId, newName);
             window.showStatus('Renamed to ' + newName, 'success');
             closeRenameModal();
             await window.loadFiles();
@@ -517,6 +793,79 @@ async function renameFileAction(index, currentName) {
     input.onkeydown = e => { if (e.key === 'Enter') newBtn.click(); if (e.key === 'Escape') closeRenameModal(); };
 }
 function closeRenameModal() { document.getElementById('renameModal').classList.remove('show'); }
+
+async function moveFileAction(fileId, currentFolder) {
+    closeAllDropdowns();
+    const modal = document.getElementById('folderModal');
+    const title = document.getElementById('folderModalTitle');
+    const input = document.getElementById('folderMoveInput');
+    const confirmBtn = document.getElementById('folderMoveConfirm');
+
+    title.textContent = 'Move to Folder';
+    input.value = currentFolder || '';
+    input.dataset.fileId = fileId;
+    input.dataset.mode = 'move';
+    modal.classList.add('show');
+    setTimeout(() => { input.focus(); input.setSelectionRange(0, input.value.length); }, 100);
+
+    const newBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+
+    newBtn.addEventListener('click', async () => {
+        const folderName = sanitizeFolderName(input.value);
+        newBtn.disabled = true; newBtn.textContent = 'Moving...';
+        try {
+            const txHash = await moveFileToFolderOnChain(input.dataset.fileId, folderName);
+            window.showStatus(`Moved to ${folderName || 'Home'}. Tx: ${txHash.substring(0, 10)}...`, 'success');
+            closeFolderModal();
+            await window.loadFiles();
+        } catch (e) {
+            window.showStatus('Move failed: ' + e.message, 'error');
+        } finally {
+            newBtn.disabled = false; newBtn.textContent = 'Move';
+        }
+    });
+
+    input.onkeydown = e => { if (e.key === 'Enter') newBtn.click(); if (e.key === 'Escape') closeFolderModal(); };
+}
+
+async function createFolderAction() {
+    const modal = document.getElementById('folderModal');
+    const title = document.getElementById('folderModalTitle');
+    const input = document.getElementById('folderMoveInput');
+    const confirmBtn = document.getElementById('folderMoveConfirm');
+
+    title.textContent = 'New Folder';
+    input.value = '';
+    input.dataset.fileId = '';
+    input.dataset.mode = 'create';
+    modal.classList.add('show');
+    setTimeout(() => input.focus(), 100);
+
+    const newBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+    newBtn.textContent = 'Create';
+
+    newBtn.addEventListener('click', async () => {
+        const folderName = sanitizeFolderName(input.value);
+        if (!folderName) return window.showStatus('Folder name is required', 'error');
+        newBtn.disabled = true; newBtn.textContent = 'Creating...';
+        try {
+            const txHash = await createFolderOnChain(folderName);
+            window.showStatus(`Folder created. Tx: ${txHash.substring(0, 10)}...`, 'success');
+            closeFolderModal();
+            await window.loadFiles();
+        } catch (e) {
+            window.showStatus('Create folder failed: ' + e.message, 'error');
+        } finally {
+            newBtn.disabled = false; newBtn.textContent = 'Create';
+        }
+    });
+
+    input.onkeydown = e => { if (e.key === 'Enter') newBtn.click(); if (e.key === 'Escape') closeFolderModal(); };
+}
+
+function closeFolderModal() { document.getElementById('folderModal').classList.remove('show'); }
 
 async function downloadFileAction(fileId, fileName, isEncrypted) {
     closeAllDropdowns();
@@ -544,22 +893,43 @@ async function downloadFileAction(fileId, fileName, isEncrypted) {
     } catch (e) { window.showStatus('Download failed: ' + e.message, 'error'); }
 }
 
-async function shareFileAction(fileId, ipfsHash) {
+async function shareFileAction(fileId, fileName) {
     closeAllDropdowns();
-    try {
-        let link;
-        if (ipfsHash) {
-            link = 'https://gateway.pinata.cloud/ipfs/' + ipfsHash;
-            window.showStatus('IPFS link copied!', 'success');
-        } else {
-            link = CONFIG.SERVER.url + '/api/files/' + encodeURIComponent(fileId);
-            window.showStatus('Link copied!', 'success');
+    const modal = document.getElementById('shareModal');
+    const input = document.getElementById('shareWalletInput');
+    const confirmBtn = document.getElementById('shareConfirm');
+
+    input.value = '';
+    input.dataset.fileId = fileId;
+    input.dataset.fileName = fileName;
+    modal.classList.add('show');
+    setTimeout(() => input.focus(), 100);
+
+    const newBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+
+    newBtn.addEventListener('click', async () => {
+        const recipient = input.value.trim();
+        if (!recipient) return window.showStatus('Recipient wallet is required', 'error');
+        newBtn.disabled = true; newBtn.textContent = 'Sharing...';
+        try {
+            const txHash = await shareFileOnChain(input.dataset.fileId, recipient);
+            window.showStatus(`Shared ${input.dataset.fileName}. Tx: ${txHash.substring(0, 10)}...`, 'success');
+            closeShareModal();
+            await window.loadFiles();
+        } catch (e) {
+            window.showStatus('Share failed: ' + e.message, 'error');
+        } finally {
+            newBtn.disabled = false; newBtn.textContent = 'Share';
         }
-        await navigator.clipboard.writeText(link);
-    } catch { window.showStatus('Failed to copy link', 'error'); }
+    });
+
+    input.onkeydown = e => { if (e.key === 'Enter') newBtn.click(); if (e.key === 'Escape') closeShareModal(); };
 }
 
-async function deleteFileAction(index, fileId) {
+function closeShareModal() { document.getElementById('shareModal').classList.remove('show'); }
+
+async function deleteFileAction(fileId) {
     closeAllDropdowns();
     if (!confirm('Are you sure you want to delete this file?')) return;
     try {
@@ -567,13 +937,15 @@ async function deleteFileAction(index, fileId) {
         const headers = typeof getAuthHeaders === 'function' ? getAuthHeaders() : {};
         const resp = await fetch(CONFIG.SERVER.url + '/api/files/' + encodeURIComponent(fileId), { method: 'DELETE', headers });
         if (!resp.ok) { const e = await resp.json().catch(() => ({})); throw new Error(e.error || 'Server error'); }
-        await deleteFileOnChain(index);
+        await deleteFileOnChain(fileId);
         window.showStatus('File deleted!', 'success');
         await window.loadFiles();
     } catch (e) { window.showStatus('Delete failed: ' + e.message, 'error'); }
 }
 
-function closeAllDropdowns() { document.querySelectorAll('.file-dropdown.show').forEach(d => d.classList.remove('show')); }
+function closeAllDropdowns() {
+    document.querySelectorAll('.file-dropdown.show, .file-action-menu.show').forEach(d => d.classList.remove('show'));
+}
 
 // ─── Utility Functions ──────────────────────────
 function formatFileSize(bytes) {
@@ -601,3 +973,85 @@ function getFileIcon(fn) {
 }
 function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function escapeAttr(s) { return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function sanitizeFolderName(name) {
+    return sanitizeFolderPath(name);
+}
+
+function sanitizeFolderPath(path) {
+    if (!path) return '';
+    return path
+        .trim()
+        .replace(/\\/g, '/')
+        .split('/')
+        .map(seg => seg.trim().replace(/[#?%*:|"<>]/g, '').replace(/\s+/g, ' '))
+        .filter(Boolean)
+        .join('/')
+        .substring(0, 128);
+}
+
+function folderFromRelativePath(relativePath) {
+    if (!relativePath || !relativePath.includes('/')) return '';
+    const parts = relativePath.split('/');
+    parts.pop();
+    return sanitizeFolderPath(parts.join('/'));
+}
+
+function filesToUploadItems(fileList, defaultFolder) {
+    const items = [];
+    for (const file of fileList) {
+        const folderName = defaultFolder === null
+            ? folderFromRelativePath(file.webkitRelativePath || '')
+            : (defaultFolder || '');
+        items.push({ file, folderName });
+    }
+    return items;
+}
+
+function readDirectoryEntries(reader) {
+    return new Promise((resolve, reject) => {
+        reader.readEntries(resolve, reject);
+    });
+}
+
+async function readAllDirectoryEntries(reader) {
+    const entries = [];
+    let batch;
+    do {
+        batch = await readDirectoryEntries(reader);
+        entries.push(...batch);
+    } while (batch.length > 0);
+    return entries;
+}
+
+async function traverseFileEntry(entry, parentPath) {
+    if (entry.isFile) {
+        const file = await new Promise((resolve, reject) => entry.file(resolve, reject));
+        return [{ file, folderName: sanitizeFolderPath(parentPath) }];
+    }
+    if (entry.isDirectory) {
+        const dirPath = parentPath ? parentPath + '/' + entry.name : entry.name;
+        const reader = entry.createReader();
+        const entries = await readAllDirectoryEntries(reader);
+        let results = [];
+        for (const child of entries) {
+            results = results.concat(await traverseFileEntry(child, dirPath));
+        }
+        return results;
+    }
+    return [];
+}
+
+async function collectItemsFromDataTransfer(dataTransfer) {
+    const items = [];
+    const dtItems = dataTransfer.items;
+
+    if (dtItems && dtItems.length > 0 && typeof dtItems[0].webkitGetAsEntry === 'function') {
+        for (const dtItem of dtItems) {
+            const entry = dtItem.webkitGetAsEntry();
+            if (entry) items.push(...await traverseFileEntry(entry, ''));
+        }
+        if (items.length > 0) return items;
+    }
+
+    return filesToUploadItems(dataTransfer.files, '');
+}

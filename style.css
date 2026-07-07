@@ -191,6 +191,151 @@ body {
     flex-shrink: 0;
 }
 
+/* ── Sidebar Upload ─────────────────────────── */
+.sidebar-upload-section {
+    position: relative;
+    margin-bottom: 20px;
+    padding: 0 4px;
+}
+
+.sidebar-add-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 16px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+    box-shadow: 0 4px 14px rgba(30, 64, 175, 0.35);
+}
+
+.sidebar-add-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(30, 64, 175, 0.45);
+}
+
+.sidebar-add-btn:active {
+    transform: translateY(0);
+}
+
+.upload-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 4px;
+    right: 4px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 6px;
+    z-index: 200;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.upload-menu.show {
+    display: block;
+    animation: fadeSlideUp 0.15s ease both;
+}
+
+.upload-menu-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--transition);
+    text-align: left;
+}
+
+.upload-menu-item:hover {
+    background: var(--bg-hover);
+}
+
+.upload-menu-item svg {
+    color: var(--accent);
+    flex-shrink: 0;
+}
+
+.sidebar-upload-options {
+    margin-top: 10px;
+    padding: 0 4px;
+}
+
+.sidebar-encrypt-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.sidebar-encrypt-toggle input {
+    display: none;
+}
+
+.sidebar-encrypt-slider {
+    width: 36px;
+    height: 20px;
+    background: var(--bg-tertiary);
+    border-radius: 10px;
+    position: relative;
+    transition: background var(--transition);
+    flex-shrink: 0;
+}
+
+.sidebar-encrypt-slider::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: var(--text-secondary);
+    border-radius: 50%;
+    transition: all var(--transition);
+}
+
+.sidebar-encrypt-toggle input:checked + .sidebar-encrypt-slider {
+    background: var(--primary);
+}
+
+.sidebar-encrypt-toggle input:checked + .sidebar-encrypt-slider::after {
+    left: 18px;
+    background: #fff;
+}
+
+.sidebar-encrypt-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.sidebar-upload-hint {
+    margin-top: 8px;
+    padding: 0 4px;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.upload-progress-inline {
+    margin-bottom: 20px;
+}
+
 /* Sidebar Footer */
 .sidebar-footer {
     margin-top: auto;
@@ -607,6 +752,128 @@ body {
     margin-top: 2px;
 }
 
+/* ── Wallet Page ─────────────────────────────── */
+.wallet-page-grid {
+    display: grid;
+    gap: 16px;
+    animation: fadeSlideUp 0.5s 0.2s ease both;
+}
+
+.wallet-panel,
+.wallet-metric {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+.wallet-profile-panel {
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.wallet-avatar {
+    width: 54px;
+    height: 54px;
+    border-radius: var(--radius-sm);
+    background: var(--accent-glow);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.wallet-profile-main {
+    min-width: 0;
+}
+
+.wallet-profile-label,
+.wallet-metric-label,
+.wallet-row span {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+.wallet-profile-address {
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.wallet-profile-status {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.wallet-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.wallet-metric {
+    padding: 18px;
+}
+
+.wallet-metric-value {
+    margin-top: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+}
+
+.wallet-details-panel {
+    padding: 18px;
+    display: grid;
+    gap: 10px;
+}
+
+.wallet-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.wallet-code {
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.wallet-copy-btn {
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.wallet-copy-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
 /* ── File List ──────────────────────────────── */
 .file-list {
     margin-top: 6px;
@@ -633,6 +900,7 @@ body {
     border-radius: var(--radius-sm);
     transition: all var(--transition);
     border-bottom: 1px solid var(--border-color);
+    cursor: default;
 }
 
 .file-item:hover {
@@ -715,17 +983,15 @@ body {
 }
 
 /* ── File Dropdown ─────────────────────────── */
-.file-dropdown {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    margin-top: 4px;
+.file-dropdown,
+.file-action-menu {
+    position: fixed;
     min-width: 180px;
     background: var(--bg-secondary);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-md);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-    z-index: 100;
+    z-index: 2500;
     opacity: 0;
     visibility: hidden;
     transform: translateY(-8px) scale(0.95);
@@ -733,7 +999,8 @@ body {
     overflow: hidden;
 }
 
-.file-dropdown.show {
+.file-dropdown.show,
+.file-action-menu.show {
     opacity: 1;
     visibility: visible;
     transform: translateY(0) scale(1);
@@ -1206,8 +1473,89 @@ body {
     font-weight: 500;
 }
 
+.folder-input {
+    width: min(280px, 100%);
+    margin-top: 14px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 13px;
+    outline: none;
+    transition: all var(--transition);
+}
+
+.folder-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79, 143, 255, 0.12);
+}
+
 /* ── Category Tabs ─────────────────────────── */
-.category-tabs {
+.folder-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.folder-card {
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+    transition: all var(--transition);
+    min-width: 0;
+}
+
+.folder-card:hover,
+.folder-card.active {
+    border-color: var(--accent);
+    background: rgba(79, 143, 255, 0.06);
+}
+
+.folder-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--success);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.folder-card-main {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.folder-card-name {
+    color: var(--text-primary);
+    font-size: 13.5px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.folder-card-meta {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.category-tabs,
+.folder-tabs {
     display: flex;
     gap: 6px;
     margin-bottom: 18px;
@@ -1215,7 +1563,12 @@ body {
     animation: fadeSlideUp 0.4s ease both;
 }
 
-.cat-tab {
+.folder-tabs {
+    margin-bottom: 10px;
+}
+
+.cat-tab,
+.folder-tab {
     padding: 7px 16px;
     border-radius: 50px;
     border: 1px solid var(--border-color);
@@ -1229,13 +1582,15 @@ body {
     white-space: nowrap;
 }
 
-.cat-tab:hover {
+.cat-tab:hover,
+.folder-tab:hover {
     border-color: var(--accent-dim);
     color: var(--text-primary);
     background: var(--bg-hover);
 }
 
-.cat-tab.active {
+.cat-tab.active,
+.folder-tab.active {
     background: var(--primary);
     color: #fff;
     border-color: var(--primary);
@@ -1260,6 +1615,11 @@ body {
 .badge-ipfs {
     background: rgba(79, 143, 255, 0.15);
     color: var(--accent-light);
+}
+
+.badge-folder {
+    background: rgba(34, 197, 94, 0.14);
+    color: var(--success);
 }
 
 /* ── Activity Log ──────────────────────────── */
@@ -1570,27 +1930,23 @@ body {
         padding: 16px 14px;
     }
 
-    /* Hide upload zone & drag overlay on mobile */
+    /* Hide legacy upload zone */
     .upload-zone {
         display: none;
     }
 
+    /* Show drag overlay on mobile when wallet connected — optional off */
     .drag-overlay {
         display: none !important;
     }
 
-    /* Show text variants */
-    .mobile-text {
-        display: inline;
+    /* Sidebar upload always visible on mobile */
+    .sidebar-upload-section {
+        display: block;
     }
 
-    .desktop-text {
+    .sidebar-upload-hint {
         display: none;
-    }
-
-    /* Show FAB */
-    .mobile-upload-fab {
-        display: flex;
     }
 
     /* File list */
@@ -1613,6 +1969,14 @@ body {
     .storage-stats {
         grid-template-columns: 1fr 1fr;
         gap: 10px;
+    }
+
+    .wallet-profile-panel {
+        align-items: flex-start;
+    }
+
+    .wallet-metric-grid {
+        grid-template-columns: 1fr;
     }
 
     .stat-card {

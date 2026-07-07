@@ -24,8 +24,8 @@
                 <path
                     d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
             </svg>
-            <h2>Drop files here to upload</h2>
-            <p>Files will be stored securely on the blockchain</p>
+            <h2>Drop files or folders here</h2>
+            <p>Upload via drag & drop anywhere in the app</p>
         </div>
     </div>
 
@@ -36,6 +36,44 @@
     <aside class="sidebar">
         <div class="logo">
             <img src="logo CLD.svg" alt="CLD" class="logo-svg">
+        </div>
+
+        <div class="sidebar-upload-section">
+            <button class="sidebar-add-btn" id="sidebarAddBtn" type="button" aria-haspopup="true" aria-expanded="false">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span>Tambah</span>
+            </button>
+            <div class="upload-menu" id="uploadMenu">
+                <button class="upload-menu-item" id="uploadFileBtn" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                    </svg>
+                    Upload File
+                </button>
+                <button class="upload-menu-item" id="uploadFolderBtn" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-19.5 0A2.25 2.25 0 0 0 4.5 15h15a2.25 2.25 0 0 0 2.25-2.25m-19.5 0v.75A2.25 2.25 0 0 0 4.5 18h15a2.25 2.25 0 0 0 2.25-2.25v-.75" />
+                    </svg>
+                    Upload Folder
+                </button>
+                <button class="upload-menu-item" id="createFolderBtn" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 10.5v6m3-3H9m12-.75V12A2.25 2.25 0 0 0 18.75 9.75h-15A2.25 2.25 0 0 0 1.5 12v.75m19.5 0A2.25 2.25 0 0 1 18.75 15h-15A2.25 2.25 0 0 1 1.5 12.75m19.5 0v3A2.25 2.25 0 0 1 18.75 18h-15A2.25 2.25 0 0 1 1.5 15.75v-3" />
+                    </svg>
+                    New Folder
+                </button>
+            </div>
+            <div class="sidebar-upload-options">
+                <label class="sidebar-encrypt-toggle">
+                    <input type="checkbox" id="encryptToggle">
+                    <span class="sidebar-encrypt-slider"></span>
+                    <span class="sidebar-encrypt-label">Encrypt</span>
+                </label>
+            </div>
+            <p class="sidebar-upload-hint">Drag files anywhere to upload</p>
         </div>
 
         <nav class="nav-menu">
@@ -67,6 +105,13 @@
                         <path
                             d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
                     </svg></span><span>Shared</span>
+            </div>
+            <div class="nav-item" data-page="wallet">
+                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.5">
+                        <path
+                            d="M21 7.5V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25h13.5A2.25 2.25 0 0 0 21 18v-1.5M16.5 12h.008v.008H16.5V12Zm-1.875-3.75h5.25c.621 0 1.125.504 1.125 1.125v5.25c0 .621-.504 1.125-1.125 1.125h-5.25A2.625 2.625 0 0 1 12 13.125v-2.25a2.625 2.625 0 0 1 2.625-2.625Z" />
+                    </svg></span><span>Wallet</span>
             </div>
         </nav>
 
@@ -126,32 +171,7 @@
         <div class="content-area">
             <!-- ═══ HOME PAGE ═══ -->
             <div class="page" id="page-home">
-                <div class="section-title">Upload Files</div>
-                <div class="upload-zone" id="uploadZone">
-                    <div class="upload-glow"></div>
-                    <div class="upload-content">
-                        <div class="upload-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                <path
-                                    d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
-                            </svg>
-                        </div>
-                        <h2><span class="desktop-text">Click or drag files here</span><span class="mobile-text">Tap to
-                                upload files</span></h2>
-                        <p>Max 100MB per file · Stored on blockchain</p>
-                        <div class="encrypt-toggle">
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="encryptToggle">
-                                <span class="toggle-slider"></span>
-                            </label>
-                            <span class="encrypt-label">Encrypt before upload</span>
-                        </div>
-                    </div>
-                </div>
-                <input type="file" id="fileInput" class="file-input" multiple>
-
-                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                <div class="upload-progress upload-progress-inline" id="uploadProgress" style="display: none;">
                     <div class="progress-bar-container">
                         <div class="progress-bar" id="progressBar"></div>
                     </div>
@@ -186,6 +206,8 @@
             <!-- ═══ MY FILES PAGE ═══ -->
             <div class="page" id="page-files" style="display:none">
                 <div class="section-title">My Files</div>
+                <div class="folder-card-grid" id="folderCards"></div>
+                <div class="folder-tabs" id="folderTabs"></div>
                 <div class="category-tabs">
                     <button class="cat-tab active" data-cat="all">All</button>
                     <button class="cat-tab" data-cat="images"><svg width="14" height="14" viewBox="0 0 24 24"
@@ -251,14 +273,61 @@
 
             <!-- ═══ SHARED PAGE ═══ -->
             <div class="page" id="page-shared" style="display:none">
-                <div class="empty-state" style="display:block">
-                    <div class="empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="1.5" style="margin: 0 auto;">
-                            <path
-                                d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                        </svg></div>
-                    <h3>Shared Files</h3>
-                    <p>Files pinned to IPFS are accessible via public gateways</p>
+                <div class="section-title">Shared With Me</div>
+                <div class="file-list-header">
+                    <div class="file-name">Name</div>
+                    <div class="file-size">Size</div>
+                    <div class="file-date">Date</div>
+                    <div class="file-actions">Actions</div>
+                </div>
+                <div class="file-list-container" id="sharedFileList"></div>
+            </div>
+
+            <!-- ═══ WALLET PAGE ═══ -->
+            <div class="page" id="page-wallet" style="display:none">
+                <div class="section-title">Wallet</div>
+                <div class="wallet-page-grid">
+                    <div class="wallet-panel wallet-profile-panel">
+                        <div class="wallet-avatar" id="walletAvatar">--</div>
+                        <div class="wallet-profile-main">
+                            <div class="wallet-profile-label">Connected Wallet</div>
+                            <div class="wallet-profile-address" id="walletPageAddress">Not connected</div>
+                            <div class="wallet-profile-status" id="walletPageStatus">Connect wallet to view account details</div>
+                        </div>
+                    </div>
+
+                    <div class="wallet-metric-grid">
+                        <div class="wallet-metric">
+                            <div class="wallet-metric-label">Balance</div>
+                            <div class="wallet-metric-value" id="walletPageBalance">0 CLD</div>
+                        </div>
+                        <div class="wallet-metric">
+                            <div class="wallet-metric-label">Network</div>
+                            <div class="wallet-metric-value" id="walletPageNetwork">--</div>
+                        </div>
+                        <div class="wallet-metric">
+                            <div class="wallet-metric-label">Chain ID</div>
+                            <div class="wallet-metric-value" id="walletPageChainId">--</div>
+                        </div>
+                    </div>
+
+                    <div class="wallet-panel wallet-details-panel">
+                        <div class="wallet-row">
+                            <span>Wallet Address</span>
+                            <button class="wallet-copy-btn" data-copy-target="walletPageFullAddress">Copy</button>
+                        </div>
+                        <div class="wallet-code" id="walletPageFullAddress">--</div>
+                        <div class="wallet-row">
+                            <span>Contract Address</span>
+                            <button class="wallet-copy-btn" data-copy-target="walletPageContract">Copy</button>
+                        </div>
+                        <div class="wallet-code" id="walletPageContract">--</div>
+                        <div class="wallet-row">
+                            <span>RPC URL</span>
+                            <button class="wallet-copy-btn" data-copy-target="walletPageRpc">Copy</button>
+                        </div>
+                        <div class="wallet-code" id="walletPageRpc">--</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -301,15 +370,56 @@
         </div>
     </div>
 
+    <!-- Move Folder Modal -->
+    <div class="modal-overlay rename-modal" id="folderModal" onclick="if(event.target===this)closeFolderModal()">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="folderModalTitle">Move to Folder</h3>
+                <button class="modal-close" onclick="closeFolderModal()"><svg width="20" height="20" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 18L18 6M6 6l12 12" />
+                    </svg></button>
+            </div>
+            <div class="modal-body">
+                <div class="rename-form">
+                    <input type="text" class="rename-input" id="folderMoveInput" placeholder="Folder name"
+                        autocomplete="off">
+                    <div class="rename-actions">
+                        <button class="rename-cancel" onclick="closeFolderModal()">Cancel</button>
+                        <button class="rename-confirm" id="folderMoveConfirm">Move</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="modal-overlay rename-modal" id="shareModal" onclick="if(event.target===this)closeShareModal()">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Share File</h3>
+                <button class="modal-close" onclick="closeShareModal()"><svg width="20" height="20" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 18L18 6M6 6l12 12" />
+                    </svg></button>
+            </div>
+            <div class="modal-body">
+                <div class="rename-form">
+                    <input type="text" class="rename-input" id="shareWalletInput" placeholder="Recipient wallet address"
+                        autocomplete="off">
+                    <div class="rename-actions">
+                        <button class="rename-cancel" onclick="closeShareModal()">Cancel</button>
+                        <button class="rename-confirm" id="shareConfirm">Share</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="status-message" id="statusMessage"></div>
 
-    <!-- Mobile Upload FAB -->
-    <button class="mobile-upload-fab" id="mobileUploadFab" aria-label="Upload file">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round">
-            <path d="M12 5v14M5 12h14" />
-        </svg>
-    </button>
+    <input type="file" id="fileInput" class="file-input" multiple>
+    <input type="file" id="folderInput" class="file-input" webkitdirectory multiple>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js"></script>
     <script src="js/config.js"></script>
